@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+
+
+  <head>
+  <style type="text/css">
+	table, th, td {
+		border: 1px solid black;
+		border-collapse: collapse;
+	}
+	
+	th, td {
+		padding: 5px;
+		text-align: left;
+	}
+	
+	th {
+		text-align: left;
+}
+</style>
+    <script  src="https://code.jquery.com/jquery-3.2.1.js"
+      integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE="  crossorigin="anonymous"></script>
+  </head>
+
+  <body onload="loadTableData();">
+   <h1>
+    <marquee bgcolor=green behavior=alternate> TODO Application</marquee>
+   </h1>
+   
+    <p><a href="JavaScript:newPopup('/addItem.html');">Add ToDo Item</a></p>
+    
+      
+    Filter ToDo: <select id="filterTodo" onchange="filterByStatus()">
+       	  <option value="all">All
+		  <option value=true>Complete
+		  <option value=false>Pending
+	 </select>
+    </div> 
+  
+    <br/>
+    <br/>
+    
+    <div id="urlTable">
+    
+    </div>
+    
+    <script type="text/javascript">
+    function filterByStatus(){
+    	
+    	var filter = document.getElementById('filterTodo').value;
+    	var sendData;
+    	
+    	if(filter == 'all' ){
+    		sendData = {};
+    	}else{
+    		sendData = {"complete": filter};
+    	}
+    	
+    	$.ajax({
+            url: 'http://localhost:8004/todos',
+          
+            type: 'GET',
+            contentType: "application/json",
+            jsonpCallback: "jsonRead" ,
+            data: sendData,
+            headers:{'Accept': 'application/json', 'X-Request': 'JSON'},
+            success: function(response) {
+            	window.data=response;
+            	
+                displayTable(response);
+            },
+            error: function(error) {
+              
+                console.log(error);
+            }
+        });
+    	
+    	
+    	
+    }
+    
+
+    function loadTableData(){
+    	
+        
+         $.ajax({
+                url: 'http://localhost:8004/todos',
+              
+                type: 'GET',
+                contentType: "application/json",
+                jsonpCallback: "jsonRead" ,
+                headers:{'Accept': 'application/json', 'X-Request': 'JSON'},
+                success: function(response) {
+                	window.data=response;
+                  
+                    displayTable(response);
+                },
+                error: function(error) {
+                  
+                    console.log(error);
+                }
+            });
+      }
+    function displayTable(urlData){
+    	$('#urlTable').empty();
+    	var table = document.createElement('table');
+    	$("#urlTable").append(table);
+    	
+    	var tblHeader = ['ID', 'NAME', 'CATEGORY', 'COMPLETE STATUS', 'DELETE TODO']; 
+    	var tr = document.createElement('tr');
+    	table.append(tr);
+    	for(var i = 0; i< tblHeader.length; i++){
+    		var th = document.createElement('th');
+    		tr.append(th);
+        ///th.html('url');
+        th.innerHTML = tblHeader[i];
+    	}
+    	
+    	var tblHeaderValue = ['id', 'name', 'category', 'complete','delete']; 
+    	for(var i = 0; i< urlData.length; i++){
+    		var tr = document.createElement('tr');
+        	table.append(tr);
+    		
+    		for(var j = 0; j< tblHeaderValue.length; j++){
+    			var td = document.createElement('td');
+        		tr.append(td);
+        		if (tblHeaderValue[j] == 'url') {
+        			var link = document.createElement('a');
+                    link.setAttribute('href', 'report.html?urlData='+urlData[i]['id']);
+                    link.setAttribute('target', "_blank");
+                    var linkText = document.createTextNode(urlData[i][tblHeaderValue[j]]);
+                    link.appendChild(linkText);
+                    
+                    td.appendChild(link);
+                   
+        			
+       		}else if (tblHeaderValue[j] == 'complete') {
+       			
+        			if(urlData[i][tblHeaderValue[j]] == false){
+        				var method = 'changeTODOStatus('+urlData[i]['id']+',false)';
+               			var html = '<button onclick='+method+'>Change</button>';
+        				
+        				td.innerHTML = 'Pending  ' + html ;
+        			}else{
+        				var method = 'changeTODOStatus('+urlData[i]['id']+',true)';
+               			var html = '<button onclick='+method+'>Change</button>';
+        				td.innerHTML = 'Completed  '+ html;
+        			}
+        			
+       		}
+       		else if (tblHeaderValue[j] == 'delete') {
+       			var method = 'deleteTODO('+urlData[i]['id']+')';
+       			var html = '<button onclick='+method+'>Delete</button>'
+       			td.innerHTML = html;
+    			
+   		}else{
+                td.innerHTML = urlData[i][tblHeaderValue[j]];
+        		}
+        	}
+        ///th.html('url');
+       
+    	}
+    }
+    
+    function deleteTODO(deleteId) {
+    	$.ajax({
+            type: 'delete',
+            url: 'http://localhost:8004/todos/'+deleteId,
+            contentType: "application/json; charset=utf-8",
+            traditional: true,
+            success: function (data) {
+                alert('TODO Deleted!!!');
+                window.location.reload(); 
+               
+            }
+            
+        });
+    }
+    function changeTODOStatus(changeStatusId, status) {
+    	var urlString = '';
+    	if(status == true){
+    		urlString = 'http://localhost:8004/todos/todo/id/'+changeStatusId+'/status/pending';
+    	}else{
+    		urlString = 'http://localhost:8004/todos/todo/id/'+changeStatusId+'/status/complete';
+    	}
+
+    	$.ajax({
+            type: 'post',
+            url: urlString,
+            contentType: "application/json; charset=utf-8",
+            traditional: true,
+            success: function (data) {
+                alert('status changed!!!');
+                window.location.reload(); 
+               
+            }
+            
+        });
+    }
+    
+    function newPopup(url) {
+    	popupWindow = window.open(
+    		url,'popUpWindow','height=300,width=500,left=300,top=300,resizable=yes,scrollbars=yes,toolbar=yes,menubar=no,location=no,directories=no,status=yes')
+    }
+    
+  
+    </script>
+    
+    
+    
+  </body>
+
+</html>
